@@ -1,0 +1,49 @@
+{
+    "author": "lesliesbird",
+    "dependencies": {},
+    "keywords": [],
+    "name": "chaos",
+    "pebble": {
+        "displayName": "Chaos",
+        "enableMultiJS": false,
+        "messageKeys": {
+            "dummy": 0
+        },
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/menu_icon.png",
+                    "menuIcon": true,
+                    "name": "IMAGE_MENU_ICON",
+                    "type": "png"
+                },
+                {
+                    "characterRegex": "[0-9:/ ]",
+                    "file": "fonts/Impact.ttf",
+                    "name": "REGULAR_30",
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[A-Za-z]",
+                    "file": "fonts/Impact.ttf",
+                    "name": "REGULAR_14",
+                    "type": "font"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery"
+        ],
+        "uuid": "2b8e05cf-60fc-4b3b-8566-aa47eb5abdb8",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "2.0.0"
+}
