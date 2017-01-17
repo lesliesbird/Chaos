@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "math-sll.h"
 
 #define ANIM_SPEED 5
 static Window *window;
@@ -25,9 +26,10 @@ uint8_t fb_data[144][138], pixel_x, pixel_y;
 #endif
 #endif
 uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
-float fp1, fp2, fp3, fp4;
+static sll fp1, fp2, fp3, fp4;
 int move_x, move_y;
 int const_real[7] = {-8000,-4000,2850,-8350,-7269,-7000,-6528}, const_img[7] = {1560,6000,100,-2321,1889,2702,-4477};
+
 #ifdef PBL_COLOR
 int red, green, blue, red_di, green_di, blue_di;
 #endif
@@ -69,31 +71,35 @@ int isSierpinskiCarpetPixelFilled(int x_coord, int y_coord)
 
 void julia_set() {
 
-  fp1 = 1.5 * (x - (144 + (x_offset * 2)) / 2) / (.5 * jzoom / 10 * (144 + (x_offset * 2))) + (move_x / 10000.0);
-  fp4 = (y - (138 + y_offset) / 2) / (.5 * jzoom / 10 * (138 + y_offset)) + (move_y / 10000.0);
+  fp1 = slladd(slldiv(sllmul(int2sll(1.5), int2sll(x - (144 + (x_offset * 2)) / 2)), sllmul(int2sll(0.5), int2sll((jzoom / 10) * (144 + (x_offset * 2))))), slldiv(int2sll(move_x), int2sll(10000)));
+   
+  fp4 = slladd(slldiv(int2sll(y - (138 + y_offset) / 2), sllmul(int2sll(0.5), int2sll(jzoom / 10 * (138 + y_offset)))), slldiv(int2sll(move_y), int2sll(10000)));
   
   for (roll = 0; roll < 255; roll++) {
     fp2 = fp1;
     fp3 = fp4;
-    fp1 = fp2 * fp2 - fp3 * fp3 + (const_real[shape] / 10000.0);
-    fp4 = 2 * fp2 * fp3 + (const_img[shape] / 10000.0);
-    if ((fp1 * fp1 + fp4 * fp4) > 4) break;
+    fp1 = slladd(sllsub(sllmul(fp2, fp2), sllmul(fp3, fp3)), slldiv(int2sll(const_real[shape]), int2sll(10000)));
+    fp4 = slladd(sllmul(sllmul(int2sll(2), fp2), fp3), slldiv(int2sll(const_img[shape]), int2sll(10000)));
+    if (slladd(sllmul(fp1, fp1), sllmul(fp4, fp4)) > int2sll(4)) break;
   }
 }
 
 void mandlebrot() {
   
-  fp1 = 0;
-  fp2 = 0;
-  fp3 = 0;
-  fp4 = 0;
+  fp1 = int2sll(0);
+  fp2 = int2sll(0);
+  fp3 = int2sll(0);
+  fp4 = int2sll(0);
   
   for (roll = 0; roll < 255; roll++) {
     fp2 = fp1;
     fp3 = fp4;
-    fp1 = fp2 * fp2 - fp3 * fp3 + (1.5 * (x - (144 + (x_offset * 2)) / 2) / (.5 * jzoom * (144 + (x_offset * 2))) + (move_x / 10000.0));
-    fp4 = 2 * fp2 * fp3 + ((y - (138 + y_offset) / 2) / (.5 * jzoom * (138 + y_offset)) + (move_y / 10000.0));
-    if ((fp1 * fp1 + fp4 * fp4) > 4) break;
+	
+    fp1 = slladd(slladd(sllsub(sllmul(fp2, fp2), sllmul(fp3, fp3)), slldiv(sllmul(int2sll(1.5), int2sll(x - (144 + (x_offset * 2)) / 2)), sllmul(int2sll(0.5), int2sll(jzoom * (144 + (x_offset * 2)))))), slldiv(int2sll(move_x), int2sll(10000)));
+    fp4 = slladd(slladd(sllmul(int2sll(2), sllmul(fp2, fp3)), slldiv(int2sll(y - (138 + y_offset) / 2), sllmul(int2sll(0.5), int2sll(jzoom * (138 + y_offset))))), slldiv(int2sll(move_y), int2sll(10000)));
+  
+	
+	if (slladd(sllmul(fp1, fp1), sllmul(fp4, fp4)) > int2sll(4)) break;
   }
 }
 
@@ -108,12 +114,12 @@ void pick_pattern() {
         x = 0;
         y = 0;
     }
-	if (pattern == 2) {
-		fp1 = 0;
-		fp2 = 0;
-		fp3 = 0;
-		fp4 = 0;
-	}
+	  if (pattern == 2) {
+		  fp1 = int2sll(0);
+		  fp2 = int2sll(0);
+		  fp3 = int2sll(0);
+		  fp4 = int2sll(0);
+	  }
     if ((pattern >= 3) && (pattern < 6)) {
         pattern = 3;
         roll = 0;
@@ -124,7 +130,7 @@ void pick_pattern() {
           shape = (rand() % 7);
           move_x = (rand() % 30000) - 15000;
           move_y = (rand() % 30000) - 15000;
-		  jzoom = (rand() % 8000) + 10;
+          jzoom = (rand() % 8000) + 10;
           julia_set();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
         }
@@ -269,14 +275,15 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         if (pattern == 2) { //Henon Attractor
             
             fp1 = fp2;
-            fp2 = fp3 + 1 - (1.4 * (fp2 * fp2));
-            fp3 = (.3 * fp1);
+            fp4 = sllmul(int2sll(1.4), sllmul(fp2, fp2));
+            fp2 = sllsub(slladd(fp3, int2sll(1)),fp4);
+            fp3 = sllmul(int2sll(0.3), fp1);
 #ifdef PBL_PLATFORM_EMERY
-            x1 = ((fp2 + 1) * 60) + 40;
-            y1 = ((fp3 + 1) * 180) - 90;
+            x1 = sll2int(sllmul(slladd(fp2,int2sll(1)), int2sll(60))) + 40;
+            y1 = sll2int(sllmul(slladd(fp3,int2sll(1)), int2sll(180))) - 90;
 #else
-            x1 = ((fp2 + 1) * 50) + 15 + (x_offset * 2);
-            y1 = ((fp3 + 1) * 150) - 75 + (y_offset);
+            x1 = sll2int(sllmul(slladd(fp2,int2sll(1)), int2sll(50))) + 15 + (x_offset * 2);
+            y1 = sll2int(sllmul(slladd(fp3,int2sll(1)), int2sll(150))) - 75 + (y_offset);
 #endif
             roll = x1;
             filled_dot = Draw_Pixel();
@@ -310,9 +317,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             if (roll > 50) filled_dot = Draw_Pixel();
 #endif
         }
-
-        
-        
+       
         if (filled_dot == 0) update_display++;
         if (update_display == 255) {
             layer_mark_dirty(ChaosLayer);
@@ -359,10 +364,10 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
                 }
                 pick_pattern();
                 new_hour = tick_time->tm_hour;
-                fp1 = 0;
-                fp2 = 0;
-                fp3 = 0;
-                fp4 = 0;
+                fp1 = int2sll(0);
+                fp2 = int2sll(0);
+                fp3 = int2sll(0);
+                fp4 = int2sll(0);
 #ifdef PBL_COLOR
                 red = rand() % 256;
                 green = rand() % 256;
