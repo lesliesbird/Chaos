@@ -2,7 +2,6 @@
 #include "math-sll.h"
 
 #define ANIM_SPEED 5
-#define BATTERY_SAVER 15
 static Window *window;
 static TextLayer *TimeLayer;
 static TextLayer *AMPMLayer;
@@ -27,7 +26,7 @@ uint8_t fb_data[144][138], pixel_x, pixel_y;
 #endif
 #endif
 #endif
-uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
+uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, battery_saver, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
 static sll fp1, fp2, fp3, fp4;
 int move_x, move_y;
 int const_real[7] = {-8000,-4000,2850,-8350,-7269,-7000,-6528}, const_img[7] = {1560,6000,100,-2321,1889,2702,-4477};
@@ -111,16 +110,19 @@ void pick_pattern() {
     if (pattern == 0) {
         x = 50;
         y = 25;
+        battery_saver = 5;
     }
     if (pattern == 1) {
         x = 0;
         y = 0;
+        battery_saver = 5;
     }
 	  if (pattern == 2) {
 		  fp1 = int2sll(0);
 		  fp2 = int2sll(0);
 		  fp3 = int2sll(0);
 		  fp4 = int2sll(0);
+      battery_saver = 2;
 	  }
     if ((pattern >= 3) && (pattern < 6)) {
         pattern = 3;
@@ -136,6 +138,7 @@ void pick_pattern() {
           julia_set();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
         }
+      battery_saver = 15;
     }
     if (pattern >= 6) {
         x = 0;
@@ -152,6 +155,7 @@ void pick_pattern() {
           mandlebrot();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
+      battery_saver = 15;
     }
 }
 #ifdef PBL_COLOR
@@ -411,7 +415,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
                 }
                 pick_pattern();
                 new_hour = tick_time->tm_hour;
-                minute_count = current_minute + BATTERY_SAVER;
+                minute_count = current_minute + battery_saver;
                 timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
                 fp1 = int2sll(0);
                 fp2 = int2sll(0);
@@ -511,7 +515,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             struct tm *current_time = localtime(&now);
             new_hour = current_time->tm_hour;
             current_minute = current_time->tm_min;
-            minute_count = current_minute + BATTERY_SAVER;
+            minute_count = current_minute + battery_saver;
             handle_minute_tick(current_time, MINUTE_UNIT);
             timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
             tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
