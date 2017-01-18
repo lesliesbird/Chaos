@@ -115,7 +115,7 @@ void pick_pattern() {
     if (pattern == 1) {
         x = 0;
         y = 0;
-        battery_saver = 5;
+        battery_saver = 10;
     }
 	  if (pattern == 2) {
 		  fp1 = int2sll(0);
