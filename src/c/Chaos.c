@@ -2,6 +2,7 @@
 #include "math-sll.h"
 
 #define ANIM_SPEED 5
+#define BATTERY_SAVER 15
 static Window *window;
 static TextLayer *TimeLayer;
 static TextLayer *AMPMLayer;
@@ -11,6 +12,7 @@ static char TimeText[] = "00:00";
 static char AMPM[] = "XX";
 static char DayText[] = "Xxx";
 AppTimer *timer_handle;
+
 #ifdef PBL_BW
 uint8_t fb_data[18][138], pixel_x, pixel_y, pixel_byte, pixel_bit;
 uint8_t powers[8] = {1,2,4,8,16,32,64,128};
@@ -25,7 +27,7 @@ uint8_t fb_data[144][138], pixel_x, pixel_y;
 #endif
 #endif
 #endif
-uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
+uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
 static sll fp1, fp2, fp3, fp4;
 int move_x, move_y;
 int const_real[7] = {-8000,-4000,2850,-8350,-7269,-7000,-6528}, const_img[7] = {1560,6000,100,-2321,1889,2702,-4477};
@@ -152,7 +154,28 @@ void pick_pattern() {
         }
     }
 }
-
+#ifdef PBL_COLOR
+void color_cycle(uint8_t color_shift) {
+  
+        if ((rand() % color_shift) == 1) {
+            
+            if ((red == 0) || (red == 255)) red_di = -red_di;
+            red = red + red_di;
+        }
+        
+        if ((rand() % color_shift) == 1) {
+            
+            if ((green == 0) || (green == 255)) green_di = -green_di;
+            green = green + green_di;
+        }
+        
+        if ((rand() % color_shift) == 1) {
+            
+            if ((blue == 0) || (blue == 255)) blue_di = -blue_di;
+            blue = blue + blue_di;
+        }
+}
+#endif
 void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
     
 #ifdef PBL_BW
@@ -182,24 +205,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
     void handle_timer() {
         
 #ifdef PBL_COLOR
-        
-        if ((rand() % 50) == 1) {
-            
-            if ((red == 0) || (red == 255)) red_di = -red_di;
-            red = red + red_di;
-        }
-        
-        if ((rand() % 50) == 1) {
-            
-            if ((green == 0) || (green == 255)) green_di = -green_di;
-            green = green + green_di;
-        }
-        
-        if ((rand() % 50) == 1) {
-            
-            if ((blue == 0) || (blue == 255)) blue_di = -blue_di;
-            blue = blue + blue_di;
-        }
+        color_cycle(50);
 #endif
         
         if (pattern == 0) { //Sierpinski Triangle
@@ -262,15 +268,44 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             if (isSierpinskiCarpetPixelFilled(x,y)) {
                 
                 x1 = (x / 2) + 11 + (x_offset);
-#ifdef PBL_ROUND
-                y1 = (y / 2) + 8 + (y_offset * 2);
-#else
-                y1 = (y / 2) + 8 + (y_offset);
-#endif
-                roll = (x1 + y1) / 2 ;
-                filled_dot = Draw_Pixel();
-            }
+
+#ifndef PBL_ROUND
+          y1 = (y / 2) + 8 + (y_offset);
+          if (y1 <= ((138 + (y_offset * 2)) / 2)) {
             
+            if (x1 <= ((144 + (x_offset * 2)) / 2) ) {
+              roll = (x1 + y1) / 2;
+            } else {
+              roll = (((144 + (x_offset * 2)) / 2) - (x1 - ((144 + (x_offset * 2)) / 2)) + y1) / 2;
+            }
+          } else {
+              
+            if (x1 <= ((144 + (x_offset * 2)) / 2) ) {
+              roll = (((138 + (y_offset * 2)) / 2) - (y1 - ((138 + (y_offset * 2)) / 2)) + x1) / 2;
+            } else {
+              roll = (((138 + (y_offset * 2)) / 2) - (y1 - ((138 + (y_offset * 2)) / 2)) + ((144 + (x_offset * 2)) / 2) - (x1 - ((144 + (x_offset * 2)) / 2))) / 2;
+            }
+          }
+#else
+          y1 = (y / 2) + 8 + (y_offset * 2);
+          if (y1 <= ((138 + (y_offset * 4)) / 2)) {
+            
+            if (x1 <= ((144 + (x_offset * 2)) / 2) ) {
+              roll = (x1 + y1) / 2;
+            } else {
+              roll = (((144 + (x_offset * 2)) / 2) - (x1 - ((144 + (x_offset * 2)) / 2)) + y1) / 2;
+            }
+          } else {
+              
+            if (x1 <= ((144 + (x_offset * 2)) / 2) ) {
+              roll = (((138 + (y_offset * 4)) / 2) - (y1 - ((138 + (y_offset * 4)) / 2)) + x1) / 2;
+            } else {
+              roll = (((138 + (y_offset * 4)) / 2) - (y1 - ((138 + (y_offset * 4)) / 2)) + ((144 + (x_offset * 2)) / 2) - (x1 - ((144 + (x_offset * 2)) / 2))) / 2;
+            }
+          }                            
+#endif
+              filled_dot = Draw_Pixel();
+            }
         }
         if (pattern == 2) { //Henon Attractor
             
@@ -285,9 +320,10 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = sll2int(sllmul(slladd(fp2,int2sll(1)), int2sll(50))) + 15 + (x_offset * 2);
             y1 = sll2int(sllmul(slladd(fp3,int2sll(1)), int2sll(150))) - 75 + (y_offset);
 #endif
-            roll = x1;
+
+            roll = (x1 + y1) / 2;
             filled_dot = Draw_Pixel();
-            
+          
         }
         if (pattern == 3 ) { //Julia Set
             
@@ -323,7 +359,9 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             layer_mark_dirty(ChaosLayer);
             update_display = 0;
         }
+        if (current_minute <= minute_count) {
         timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
+        }
     }
     
     void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
@@ -351,6 +389,15 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         
         strftime(DayText, sizeof(DayText), "%a", tick_time);
         text_layer_set_text(DayLayer, DayText);
+        current_minute = tick_time->tm_min;
+#ifdef PBL_COLOR
+        if (current_minute > minute_count) {
+          
+          red = rand() % 256;
+          green = rand() % 256;
+          blue = rand() % 256;          
+        }
+#endif
         
         if (new_hour != tick_time->tm_hour) {
 #ifdef PBL_BW
@@ -364,6 +411,8 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
                 }
                 pick_pattern();
                 new_hour = tick_time->tm_hour;
+                minute_count = current_minute + BATTERY_SAVER;
+                timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
                 fp1 = int2sll(0);
                 fp2 = int2sll(0);
                 fp3 = int2sll(0);
@@ -458,10 +507,11 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             if (green_di == 0) green_di = -1;
             if (blue_di == 0) blue_di = -1;
 #endif
-            
             time_t now = time(NULL);
             struct tm *current_time = localtime(&now);
             new_hour = current_time->tm_hour;
+            current_minute = current_time->tm_min;
+            minute_count = current_minute + BATTERY_SAVER;
             handle_minute_tick(current_time, MINUTE_UNIT);
             timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
             tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
