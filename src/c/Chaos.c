@@ -138,7 +138,7 @@ void pick_pattern() {
           julia_set();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
         }
-      battery_saver = 15;
+      battery_saver = 20;
     }
     if (pattern >= 6) {
         x = 0;
@@ -155,7 +155,7 @@ void pick_pattern() {
           mandlebrot();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
-      battery_saver = 15;
+      battery_saver = 20;
     }
 }
 #ifdef PBL_COLOR
