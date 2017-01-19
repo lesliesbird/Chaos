@@ -138,7 +138,7 @@ void pick_pattern() {
           julia_set();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
         }
-      battery_saver = 20;
+      battery_saver = 15;
     }
     if (pattern >= 6) {
         x = 0;
@@ -155,7 +155,7 @@ void pick_pattern() {
           mandlebrot();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
-      battery_saver = 20;
+      battery_saver = 15;
     }
 }
 #ifdef PBL_COLOR
@@ -264,9 +264,11 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             
         }
         if (pattern == 1) { //Sierpinski Carpet
-            
+
+          if ((current_minute + 5) <= minute_count) {
             x = rand() % 243;
             y = rand() % 243;
+          }
             
             
             if (isSierpinskiCarpetPixelFilled(x,y)) {
@@ -310,6 +312,16 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
 #endif
               filled_dot = Draw_Pixel();
             }
+          if ((current_minute + 5) > minute_count) {
+              x++;
+              if (x == 244) {
+                x = 0;
+                y++;
+                if (y ==244) {
+                  y = 0;
+                }
+              }
+          }
         }
         if (pattern == 2) { //Henon Attractor
             
@@ -330,13 +342,29 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
           
         }
         if (pattern == 3 ) { //Julia Set
+          
+          if ((current_minute + 5) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
+          }
+          
             julia_set();
             
             x1 = x;
             y1 = y;
+          
+          if ((current_minute + 5) > minute_count) {
+            
+            x++;
+            if (x == (144 + (x_offset * 2))) {
+              x = 0;
+              y++;
+              if (y == (138 + (y_offset))) {
+                y = 0;
+              }
+            }
+          }         
 #ifdef PBL_BW
             if ((roll > 100) && (roll < 255)) filled_dot = Draw_Pixel();
 #else
@@ -344,13 +372,29 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
 #endif
         }
         if (pattern == 4 ) { //Mandlebrot Set
+          
+          if ((current_minute + 5) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
-            mandlebrot();
+          }
           
+          mandlebrot();
+            
             x1 = x;
             y1 = y;
+          
+          if ((current_minute + 5) > minute_count) {
+            
+            x++;
+            if (x == (144 + (x_offset * 2))) {
+              x = 0;
+              y++;
+              if (y == (138 + (y_offset))) {
+                y = 0;
+              }
+            }
+          }         
 #ifdef PBL_BW
             if ((roll > 100) && (roll < 255)) filled_dot = Draw_Pixel();
 #else
