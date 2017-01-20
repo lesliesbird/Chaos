@@ -72,9 +72,9 @@ int isSierpinskiCarpetPixelFilled(int x_coord, int y_coord)
 
 void julia_set() {
 
-  fp1 = slladd(slldiv(sllmul(int2sll(1.5), int2sll(x - (144 + (x_offset * 2)) / 2)), sllmul(int2sll(0.5), int2sll((jzoom / 10) * (144 + (x_offset * 2))))), slldiv(int2sll(move_x), int2sll(10000)));
+  fp1 = slladd(slldiv(sllmul(int2sll(1.5), int2sll(x - (144 + (x_offset * 2)) / 2)), sllmul(int2sll(0.5), int2sll(jzoom * (144 + (x_offset * 2))))), slldiv(int2sll(move_x), int2sll(10000)));
    
-  fp4 = slladd(slldiv(int2sll(y - (138 + y_offset) / 2), sllmul(int2sll(0.5), int2sll(jzoom / 10 * (138 + y_offset)))), slldiv(int2sll(move_y), int2sll(10000)));
+  fp4 = slladd(slldiv(int2sll(y - (138 + y_offset) / 2), sllmul(int2sll(0.5), int2sll(jzoom * (138 + y_offset)))), slldiv(int2sll(move_y), int2sll(10000)));
   
   for (roll = 0; roll < 255; roll++) {
     fp2 = fp1;
@@ -85,7 +85,7 @@ void julia_set() {
   }
 }
 
-void mandlebrot() {
+void mandelbrot() {
   
   fp1 = int2sll(0);
   fp2 = int2sll(0);
@@ -104,9 +104,29 @@ void mandlebrot() {
   }
 }
 
+void newton () {
+  
+  static sll tmp;
+  
+  fp1 = slladd(slldiv(int2sll(x - (144 + (x_offset * 2))), sllmul(int2sll(0.5), int2sll(jzoom * (144 + (x_offset * 2))))), slldiv(int2sll(move_x), int2sll(10000)));
+  fp2 = slladd(slldiv(int2sll(y - (138 + y_offset)), sllmul(int2sll(0.5), int2sll(jzoom * (138 + y_offset)))), slldiv(int2sll(move_y), int2sll(10000)));
+  
+  for (roll = 0; roll < 255; roll++) {
+    fp3 = fp1;
+    fp4 = fp2;
+
+    tmp = sllmul(slladd(sllmul(fp1, fp1), sllmul(fp2, fp2)), slladd(sllmul(fp1, fp1), sllmul(fp2, fp2)));
+    fp1 = slldiv(sllsub(slladd(sllmul(sllmul(int2sll(2), fp1), tmp), sllmul(fp1, fp1)), sllmul(fp2, fp2)), sllmul(int2sll(3), tmp));
+    fp2 = slldiv(sllmul(sllmul(int2sll(2), fp2), sllsub(tmp, fp3)),  sllmul(int2sll(3), tmp));
+    tmp = slladd(sllmul(sllsub(fp1, fp3), sllsub(fp1, fp3)), sllmul(sllsub(fp2, fp4), sllsub(fp2, fp4)));
+    if (tmp <= int2sll(0.000001)) break;
+  }
+}
+
 void pick_pattern() {
   
-    pattern = rand() % 8;
+    pattern = rand() % 9;
+  
     if (pattern == 0) {
         x = 50;
         y = 25;
@@ -134,13 +154,13 @@ void pick_pattern() {
           shape = (rand() % 7);
           move_x = (rand() % 30000) - 15000;
           move_y = (rand() % 30000) - 15000;
-          jzoom = (rand() % 8000) + 10;
+          jzoom = (rand() % 800) + 1;
           julia_set();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
         }
-      battery_saver = 15;
+      battery_saver = 16;
     }
-    if (pattern >= 6) {
+    if ((pattern >= 6) && (pattern < 8)) {
         x = 0;
         y = 0;
         pattern = 4;
@@ -152,10 +172,30 @@ void pick_pattern() {
           jzoom = (rand() % 8000) + 1;
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
-          mandlebrot();
+          mandelbrot();
           APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
-      battery_saver = 15;
+      battery_saver = 16;
+    }
+    if (pattern == 8) {
+        pattern = 5;
+        roll = 0;
+        while (roll < 20) {
+
+          move_x = (rand() % 30000) - 15000;
+          move_y = (rand() % 30000) - 15000;
+#ifdef PBL_BW
+          jzoom = (rand() % 7) + 1;
+#else
+          jzoom = (rand() % 100) + 1;
+#endif
+          x = (144 + (x_offset * 2)) / 2;
+          y = (138 + (y_offset)) / 2;
+
+          newton();
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Newton center point value = %i", roll);
+        }
+      battery_saver = 16;
     }
 }
 #ifdef PBL_COLOR
@@ -343,7 +383,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
         if (pattern == 3 ) { //Julia Set
           
-          if ((current_minute + 5) <= minute_count) {
+          if ((current_minute + 6) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
@@ -354,7 +394,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 5) > minute_count) {
+          if ((current_minute + 6) > minute_count) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -371,20 +411,20 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             if (roll > 50) filled_dot = Draw_Pixel();
 #endif
         }
-        if (pattern == 4 ) { //Mandlebrot Set
+        if (pattern == 4 ) { //Mandelbrot Set
           
-          if ((current_minute + 5) <= minute_count) {
+          if ((current_minute + 6) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
           }
           
-          mandlebrot();
+          mandelbrot();
             
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 5) > minute_count) {
+          if ((current_minute + 6) > minute_count) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -401,6 +441,37 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             if (roll > 50) filled_dot = Draw_Pixel();
 #endif
         }
+          if (pattern ==5) { //Newton's Method
+            
+            if ((current_minute + 6) <= minute_count) {
+              
+              x = rand() % (144 + (x_offset * 2));
+              y = rand() % (138 + (y_offset));
+            }
+            
+            newton();
+        
+            x1 = x;
+            y1 = y;
+            roll = roll * 11;
+            
+            if ((current_minute + 6) > minute_count) {
+              
+              x++;
+              if (x == (144 + (x_offset * 2))) {
+                x = 0;
+                y++;
+                if (y == (138 + (y_offset))) {
+                  y = 0;
+                }
+              }
+            }            
+#ifdef PBL_BW
+            if (roll > 110) filled_dot = Draw_Pixel();
+#else
+            filled_dot = Draw_Pixel();
+#endif
+      }
        
         if (filled_dot == 0) update_display++;
         if (update_display == 255) {
