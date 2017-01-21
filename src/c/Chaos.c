@@ -26,10 +26,9 @@ uint8_t fb_data[144][138], pixel_x, pixel_y;
 #endif
 #endif
 #endif
-uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, battery_saver, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1, shape;
+uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, battery_saver, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1;
 static sll fp1, fp2, fp3, fp4;
-int move_x, move_y;
-int const_real[7] = {-8000,-4000,2850,-8350,-7269,-7000,-6528}, const_img[7] = {1560,6000,100,-2321,1889,2702,-4477};
+int move_x, move_y, const_real, const_img;
 
 #ifdef PBL_COLOR
 int red, green, blue, red_di, green_di, blue_di;
@@ -79,8 +78,8 @@ void julia_set() {
   for (roll = 0; roll < 255; roll++) {
     fp2 = fp1;
     fp3 = fp4;
-    fp1 = slladd(sllsub(sllmul(fp2, fp2), sllmul(fp3, fp3)), slldiv(int2sll(const_real[shape]), int2sll(10000)));
-    fp4 = slladd(sllmul(sllmul(int2sll(2), fp2), fp3), slldiv(int2sll(const_img[shape]), int2sll(10000)));
+    fp1 = slladd(sllsub(sllmul(fp2, fp2), sllmul(fp3, fp3)), slldiv(int2sll(const_real), int2sll(10000)));
+    fp4 = slladd(sllmul(sllmul(int2sll(2), fp2), fp3), slldiv(int2sll(const_img), int2sll(10000)));
     if (slladd(sllmul(fp1, fp1), sllmul(fp4, fp4)) > int2sll(4)) break;
   }
 }
@@ -151,12 +150,13 @@ void pick_pattern() {
           
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
-          shape = (rand() % 7);
           move_x = (rand() % 30000) - 15000;
           move_y = (rand() % 30000) - 15000;
+          const_real = (rand() % 16000) - 8000;
+          const_img = (rand() % 16000) - 8000;
           jzoom = (rand() % 800) + 1;
           julia_set();
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i", roll);
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i     Real = %i    Imaginary = %i", roll, const_real, const_img);
         }
       battery_saver = 16;
     }
