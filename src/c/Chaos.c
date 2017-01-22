@@ -125,7 +125,7 @@ void newton () {
 void pick_pattern() {
   
     pattern = rand() % 9;
-  
+	
     if (pattern == 0) {
         x = 50;
         y = 25;
@@ -143,7 +143,7 @@ void pick_pattern() {
 		  fp4 = int2sll(0);
       battery_saver = 2;
 	  }
-    if ((pattern >= 3) && (pattern < 6)) {
+    if ((pattern >= 3) && (pattern < 5)) {
         pattern = 3;
         roll = 0;
         while ((roll < 100) || (roll == 255)) {
@@ -156,11 +156,11 @@ void pick_pattern() {
           const_img = (rand() % 16000) - 8000;
           jzoom = (rand() % 800) + 1;
           julia_set();
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i     Real = %i    Imaginary = %i", roll, const_real, const_img);
+//		  APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i     Real = %i    Imaginary = %i", roll, const_real, const_img);
         }
-      battery_saver = 16;
+      battery_saver = 18;
     }
-    if ((pattern >= 6) && (pattern < 8)) {
+    if ((pattern >= 5) && (pattern < 7)) {
         x = 0;
         y = 0;
         pattern = 4;
@@ -173,11 +173,11 @@ void pick_pattern() {
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
           mandelbrot();
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
+ //         APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
-      battery_saver = 16;
+      battery_saver = 18;
     }
-    if (pattern == 8) {
+    if (pattern >= 7) {
         pattern = 5;
         roll = 0;
         while (roll < 20) {
@@ -191,11 +191,10 @@ void pick_pattern() {
 #endif
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
-
           newton();
-          APP_LOG(APP_LOG_LEVEL_DEBUG, "Newton center point value = %i", roll);
+//          APP_LOG(APP_LOG_LEVEL_DEBUG, "Newton center point value = %i", roll);
         }
-      battery_saver = 16;
+      battery_saver = 15;
     }
 }
 #ifdef PBL_COLOR
@@ -383,7 +382,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
         if (pattern == 3 ) { //Julia Set
           
-          if ((current_minute + 6) <= minute_count) {
+          if ((current_minute + 8) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
@@ -394,7 +393,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 6) > minute_count) {
+          if ((current_minute + 8) > minute_count) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -413,7 +412,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
         if (pattern == 4 ) { //Mandelbrot Set
           
-          if ((current_minute + 6) <= minute_count) {
+          if ((current_minute + 8) <= minute_count) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
@@ -424,7 +423,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 6) > minute_count) {
+          if ((current_minute + 8) > minute_count) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -443,7 +442,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
           if (pattern ==5) { //Newton's Method
             
-            if ((current_minute + 6) <= minute_count) {
+            if ((current_minute + 5) <= minute_count) {
               
               x = rand() % (144 + (x_offset * 2));
               y = rand() % (138 + (y_offset));
@@ -455,7 +454,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             y1 = y;
             roll = roll * 11;
             
-            if ((current_minute + 6) > minute_count) {
+            if ((current_minute + 5) > minute_count) {
               
               x++;
               if (x == (144 + (x_offset * 2))) {
