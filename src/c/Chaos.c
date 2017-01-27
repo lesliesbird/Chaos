@@ -26,7 +26,7 @@ uint8_t fb_data[144][138], pixel_x, pixel_y;
 #endif
 #endif
 #endif
-uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, battery_saver, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1;
+uint8_t x, y, x1, y1, roll, move, filled_dot, new_hour, current_minute, minute_count, battery_saver, finish_up, completed, update_display = 0, pattern = 0, x_offset = 0, y_offset = 0, jzoom = 1;
 static sll fp1, fp2, fp3, fp4;
 int move_x, move_y, const_real, const_img;
 
@@ -125,6 +125,8 @@ void newton () {
 void pick_pattern() {
   
     pattern = rand() % 9;
+    completed = 0;
+	  finish_up = 0;
 	
     if (pattern == 0) {
         x = 50;
@@ -134,14 +136,14 @@ void pick_pattern() {
     if (pattern == 1) {
         x = 0;
         y = 0;
-        battery_saver = 10;
+        battery_saver = 5;
     }
 	  if (pattern == 2) {
 		  fp1 = int2sll(0);
 		  fp2 = int2sll(0);
 		  fp3 = int2sll(0);
 		  fp4 = int2sll(0);
-      battery_saver = 2;
+		  battery_saver = 2;
 	  }
     if ((pattern >= 3) && (pattern < 5)) {
         pattern = 3;
@@ -156,9 +158,9 @@ void pick_pattern() {
           const_img = (rand() % 16000) - 8000;
           jzoom = (rand() % 800) + 1;
           julia_set();
-//		  APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i     Real = %i    Imaginary = %i", roll, const_real, const_img);
+		  APP_LOG(APP_LOG_LEVEL_DEBUG, "Julia center point value = %i     Real = %i    Imaginary = %i", roll, const_real, const_img);
         }
-      battery_saver = 18;
+		battery_saver = 10;
     }
     if ((pattern >= 5) && (pattern < 7)) {
         x = 0;
@@ -173,9 +175,9 @@ void pick_pattern() {
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
           mandelbrot();
- //         APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Mandelbrot center point value = %i", roll);
         }
-      battery_saver = 18;
+		battery_saver = 10;
     }
     if (pattern >= 7) {
         pattern = 5;
@@ -192,9 +194,9 @@ void pick_pattern() {
           x = (144 + (x_offset * 2)) / 2;
           y = (138 + (y_offset)) / 2;
           newton();
-//          APP_LOG(APP_LOG_LEVEL_DEBUG, "Newton center point value = %i", roll);
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Newton center point value = %i", roll);
         }
-      battery_saver = 15;
+		battery_saver = 10;
     }
 }
 #ifdef PBL_COLOR
@@ -300,11 +302,12 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
 #endif
             roll = roll * 63;
             filled_dot = Draw_Pixel();
+			if (current_minute > minute_count) completed = 1;
             
         }
         if (pattern == 1) { //Sierpinski Carpet
 
-          if ((current_minute + 5) <= minute_count) {
+          if (finish_up == 0) {
             x = rand() % 243;
             y = rand() % 243;
           }
@@ -351,17 +354,23 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
 #endif
               filled_dot = Draw_Pixel();
             }
-          if ((current_minute + 5) > minute_count) {
-              x++;
+          if (finish_up) {
+			  
+			  x++;
               if (x == 244) {
                 x = 0;
                 y++;
-                if (y ==244) {
+                if (y == 244) {
                   y = 0;
+				          completed = 1;
                 }
               }
-          }
-        }
+		  }
+	  
+	  
+	  
+	  
+	  }
         if (pattern == 2) { //Henon Attractor
             
             fp1 = fp2;
@@ -378,11 +387,12 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
 
             roll = (x1 + y1) / 2;
             filled_dot = Draw_Pixel();
+			if (current_minute > minute_count) completed = 1;
           
         }
         if (pattern == 3 ) { //Julia Set
           
-          if ((current_minute + 8) <= minute_count) {
+          if (finish_up == 0) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
@@ -393,7 +403,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 8) > minute_count) {
+          if (finish_up) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -401,6 +411,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
               y++;
               if (y == (138 + (y_offset))) {
                 y = 0;
+				        completed = 1;
               }
             }
           }         
@@ -412,7 +423,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
         if (pattern == 4 ) { //Mandelbrot Set
           
-          if ((current_minute + 8) <= minute_count) {
+          if (finish_up == 0) {
             
             x = rand() % (144 + (x_offset * 2));
             y = rand() % (138 + (y_offset));
@@ -423,7 +434,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             x1 = x;
             y1 = y;
           
-          if ((current_minute + 8) > minute_count) {
+          if (finish_up) {
             
             x++;
             if (x == (144 + (x_offset * 2))) {
@@ -431,6 +442,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
               y++;
               if (y == (138 + (y_offset))) {
                 y = 0;
+				        completed = 1;
               }
             }
           }         
@@ -442,7 +454,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         }
           if (pattern ==5) { //Newton's Method
             
-            if ((current_minute + 5) <= minute_count) {
+            if (finish_up == 0) {
               
               x = rand() % (144 + (x_offset * 2));
               y = rand() % (138 + (y_offset));
@@ -454,7 +466,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             y1 = y;
             roll = roll * 11;
             
-            if ((current_minute + 5) > minute_count) {
+            if (finish_up) {
               
               x++;
               if (x == (144 + (x_offset * 2))) {
@@ -462,6 +474,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
                 y++;
                 if (y == (138 + (y_offset))) {
                   y = 0;
+				          completed = 1;
                 }
               }
             }            
@@ -477,7 +490,7 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
             layer_mark_dirty(ChaosLayer);
             update_display = 0;
         }
-        if (current_minute <= minute_count) {
+        if (completed == 0) {
         timer_handle = app_timer_register(ANIM_SPEED, handle_timer, NULL);
         }
     }
@@ -508,8 +521,15 @@ void chaoslayer_update_callback(Layer *layer, GContext* ctx) {
         strftime(DayText, sizeof(DayText), "%a", tick_time);
         text_layer_set_text(DayLayer, DayText);
         current_minute = tick_time->tm_min;
+		if ((current_minute > minute_count) && (finish_up == 0)) {
+			finish_up = 1;
+			x = 0;
+			y = 0;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Finishing Drawing!");
+		}
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Completed = %i", completed);
 #ifdef PBL_COLOR
-        if (current_minute > minute_count) {
+        if (completed) {
           
           red = rand() % 256;
           green = rand() % 256;
